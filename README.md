@@ -21,6 +21,13 @@ run
 followed by
 #### docker run -p 8000:8000 python-fastapi
 
+### 2.3 with Docker-compose
+run
+#### docker-compose up -d --build 
+followed by
+#### docker-compose up 
+
+
 # 3 Health check
 If you see 
 {"status":"Working"}
