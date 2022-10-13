@@ -1,3 +1,25 @@
+# Project structure
+
+## Redis : redis folder
+## backend : main folder
+### backend/app :
+folder for code
+### backend/app/api/server.py :
+main file that sets up and launches the server
+### backend/app/api/routes :
+package that contains the routes
+### backend/app/core/config.py :
+file that loads configs
+### backend/app/core/tasks.py :
+file that contains core tasks (i. e. actions on starting and shutting down the app)
+### backend/app/databases/tasks.py
+file describing db tasks(e. g. connecting to db), with enabled logger
+
+### backend/test :
+folder for tests
+
+
+
 # How to launch
 ## 1 Setup
 run the following command:

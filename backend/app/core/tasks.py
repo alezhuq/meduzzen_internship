@@ -14,3 +14,7 @@ def create_stop_app_handler(app: FastAPI):
         await close_db_connection(app)
 
     return stop_app
+
+
+
+

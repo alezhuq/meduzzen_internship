@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-import aioredis
 
 router = APIRouter(
     tags=["index"],
@@ -7,6 +6,5 @@ router = APIRouter(
 
 
 @router.get("/")
-async def read_root():
-    redis = await aioredis.from_url('redis://localhost')
+def read_root():
     return {"status": "Working"}
