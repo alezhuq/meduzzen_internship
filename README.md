@@ -1,3 +1,25 @@
+# Project structure
+
+## Redis : redis folder
+## backend : main folder
+### backend/app :
+folder for code
+### backend/app/api/server.py :
+main file that sets up and launches the server
+### backend/app/api/routes :
+package that contains the routes
+### backend/app/core/config.py :
+file that loads configs
+### backend/app/core/tasks.py :
+file that contains core tasks (i. e. actions on starting and shutting down the app)
+### backend/app/databases/tasks.py
+file describing db tasks(e. g. connecting to db), with enabled logger
+
+### backend/test :
+folder for tests
+
+
+
 # How to launch
 ## 1 Setup
 run the following command:
@@ -20,6 +42,13 @@ run
 #### docker build -t python-fastapi . 
 followed by
 #### docker run -p 8000:8000 python-fastapi
+
+### 2.3 with Docker-compose
+run
+#### docker-compose up -d --build 
+followed by
+#### docker-compose up 
+
 
 # 3 Health check
 If you see 

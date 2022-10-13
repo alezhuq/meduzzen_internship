@@ -1,12 +1,13 @@
 FROM python:3
+WORKDIR /backend
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONBUFFERED 1
 
-WORKDIR /fastapi_app
+RUN apt-get update \
+  && apt-get -y install netcat gcc postgresql \
+  && apt-get clean
 
-COPY requirements.txt .
-
+RUN pip install --upgrade pip
+COPY ./requirements.txt /backend/requirements.txt
 RUN pip install -r requirements.txt
-
-COPY ./app ./app
-
-CMD ["python", "./app/main.py"]
-# CMD [ "uvicorn", "app.main:app", "--reload", "--host", "127.0.0.1" ]
+COPY . /backend
