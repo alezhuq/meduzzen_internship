@@ -12,9 +12,12 @@ package that contains the routes
 file that loads configs
 ### backend/app/core/tasks.py :
 file that contains core tasks (i. e. actions on starting and shutting down the app)
-### backend/app/databases/tasks.py
+### backend/app/db/tasks.py :
 file describing db tasks(e. g. connecting to db), with enabled logger
-
+### backend/app/db/schemas :
+folder for pydantic schemas
+### backend/app/db/migrations :
+folder, created for running migrations with alembic
 ### backend/test :
 folder for tests
 
@@ -49,9 +52,26 @@ run
 followed by
 #### docker-compose up 
 
+# 3 Running migrations:
+## 3.1 migrations
+firstly, you need to start the docker containers
 
-# 3 Health check
+to run migrations you need to get ID of the server's (not db's) container
+#### docker ps
+then grab the server's id and execute next command
+#### docker exec -it "server id here" bash
+inside the bash shell, run this command
+#### alembic upgrade head
+## 3.2 check
+to make sure that everything has been done correctly, execute this command
+#### docker-compose exec db psql -h localhost -U postgres --dbname=postgres
+and to get created table, type in this:
+#### \d "Users"
 If you see 
+Table " public.Users"
+then migrations have been applied successfully
+# 4 Health check
+
 {"status":"Working"}
 on 
 http://127.0.0.1:8000/ , then you've done everything correctly
