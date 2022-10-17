@@ -27,7 +27,7 @@ class SignInSchema(CoreSchema):
             validate_email(v, check_deliverability=True)
 
         except EmailNotValidError as e:
-            print(str(e))
+            raise ValidationError("can't validate email")
 
 
 class SignUpSchema(CoreSchema):
@@ -51,11 +51,11 @@ class UserUpdatePasswordSchema(CoreSchema):
             raise ValueError('passwords do not match')
 
 
+
+"""to get list of users :
+[UserSingleResponseSchema(user) for user in users]
+"""
 class UserSingleResponseSchema(CoreSchema):
     username: str
     email: EmailStr
 
-
-class UserListResponseSchema(CoreSchema):
-    def response(self, users):
-        return [UserSingleResponseSchema(user) for user in users]

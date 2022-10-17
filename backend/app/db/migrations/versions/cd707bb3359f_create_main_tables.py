@@ -8,12 +8,12 @@ import sqlalchemy as sa
 from alembic import op
 # revision identifiers, used by Alembic
 revision = 'cd707bb3359f'
-down_revision = '04c303fd2633'
+down_revision = None
 branch_labels = None
 depends_on = None
 
 
-def create_users_table() -> None:
+def upgrade() -> None:
     op.create_table(
         'Users',
         sa.Column('id', sa.Integer, primary_key=True, autoincrement=True, unique=True),
@@ -23,10 +23,6 @@ def create_users_table() -> None:
         sa.Column('register_date', sa.DateTime, default=datetime.datetime.utcnow),
         sa.Column('is_active', sa.Boolean),
     )
-
-
-def upgrade() -> None:
-    create_users_table()
 
 
 def downgrade() -> None:
