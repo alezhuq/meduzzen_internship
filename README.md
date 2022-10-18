@@ -71,9 +71,15 @@ If you see
 Table " public.Users"
 then migrations have been applied successfully
 # 4 Health check
-
+If you see
 {"status":"Working"}
 on 
 http://127.0.0.1:8000/ , then you've done everything correctly
 
+## 4.1 Endpoints
 
+####post, "/"  - create new user
+#### get, "/user/all" - get all users (with pagination)
+#### get, "/user/{user_id}" - get user by id
+#### put, "user/{user_id}/edit_password" - edit user's password
+#### delete, "/user/{user_id}/delete" delete user with this id

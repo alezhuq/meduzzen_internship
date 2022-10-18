@@ -1,16 +1,21 @@
-from pydantic import BaseModel, ValidationError, validator, EmailStr
+from pydantic import validator, EmailStr
 from email_validator import validate_email, EmailNotValidError
+from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
+
 from .core import CoreSchema, UserMixin
+from fastapi.exceptions import HTTPException
 
 
 class UserSchema(UserMixin, CoreSchema):
     username: str
     password: str
-
     email: EmailStr
 
+    def __str__(self):
+        return self.username
 
-class SignInSchema(CoreSchema):
+
+class RegisterSchema(CoreSchema):
     username: str
     email: EmailStr
     password1: str
@@ -27,10 +32,12 @@ class SignInSchema(CoreSchema):
             validate_email(v, check_deliverability=True)
 
         except EmailNotValidError as e:
-            raise ValidationError("can't validate email")
+            raise HTTPException(status_code=HTTP_422_UNPROCESSABLE_ENTITY)
+
+        return v
 
 
-class SignUpSchema(CoreSchema):
+class SignInSchema(CoreSchema):
     username: str
     password: str
 
@@ -44,18 +51,21 @@ class UserUpdatePasswordSchema(CoreSchema):
     def old_new_passwords_match(cls, v, values, **kwargs):
         if 'old_password' in values and v == values['old_password']:
             raise ValueError('passwords match')
+        return v
 
     @validator("new_confirm")
     def new_confirm_passwords_match(cls, v, values, **kwargs):
         if 'new_password' in values and v != values['new_password']:
             raise ValueError('passwords do not match')
+        return v
 
 
 
 """to get list of users :
 [UserSingleResponseSchema(user) for user in users]
 """
+
+
 class UserSingleResponseSchema(CoreSchema):
     username: str
     email: EmailStr
-
