@@ -11,7 +11,7 @@ POSTGRES_SERVER = config("POSTGRES_SERVER", cast=str, default="db")
 POSTGRES_PORT = config("POSTGRES_PORT", cast=str, default="5432")
 POSTGRES_DB = config("POSTGRES_DB", cast=str)
 REDIS_HOST = config("REDIS_HOST", cast=str)
-
+SECRET_HASH_KEY = config("SECRET_HASH_KEY", cast=Secret, default="CHANGEME")
 DATABASE_URL = config(
     "DATABASE_URL",
     cast=DatabaseURL,

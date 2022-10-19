@@ -1,60 +1,57 @@
+import sqlalchemy as sa
+import datetime
 from app.db.services.base import BaseService
+from asyncpg.exceptions import UniqueViolationError
+from app.db.models.user import Users
+from app.core.security import hash_string, compare_hash
+from app.core.exceptions import UserNotFoundException, UserAlreadyexistsException
 from app.schemas.schemas import (
     UserSchema,
     RegisterSchema,
-    SignInSchema,
     UserUpdatePasswordSchema,
     UserSingleResponseSchema
 )
 
-CREATE_USER_QUERY = """
-    INSERT INTO "Users" (username, email, password)
-    VALUES (:username, :email, :password1)
-    RETURNING id, username, email, password;
-"""
-
-SELECT_ALL_USERS = """
-    SELECT username, email FROM "Users";
-"""
-
-SELECT_USER_BY_ID = """
-    SELECT username, email FROM "Users"
-    WHERE id=:id
-"""
-
-CHANGE_USER_PASSWORD = """
-    UPDATE "Users"
-    SET password =:new_password
-    WHERE id=:id
-    RETURNING username, email;
-"""
-
-DELETE_USER_BY_ID = """
-    DELETE FROM "Users"
-    WHERE id = :user_id;
-"""
-
 
 class UserService(BaseService):
     async def create_user(self, *, new_user: RegisterSchema) -> UserSchema:
-        query_values = new_user.dict()
-        query_values.pop("password2")
-        user = await self.db.fetch_one(query=CREATE_USER_QUERY, values=query_values)
-        return UserSchema(**user)
+        raw_values = new_user.dict()
+        query_values = {
+            "username": raw_values.get("username"),
+            "email": raw_values.get("email"),
+            "password": hash_string(raw_values.get("password1")),
+        }
 
-    async def get_all_users(self) -> list:
-        users = await self.db.fetch_all(query=SELECT_ALL_USERS)
+        try:
+            query = Users.insert()
+            user_id = await self.db.execute(query=query, values=query_values)
+        except UniqueViolationError:
+            raise UserAlreadyexistsException("user already exists")
+
+        query_values["id"] = user_id
+        user = UserSchema(**query_values)
+
+        return user
+
+    async def get_all_users(self, limit: int = 200, offset: int = 0) -> list[UserSingleResponseSchema]:
+        query = Users.select().limit(limit).offset(offset)
+        users = await self.db.fetch_all(query=query)
         return [UserSingleResponseSchema(**user) for user in users]
 
     async def get_by_id(self, user_id: int) -> UserSingleResponseSchema:
-        user = await self.db.fetch_one(query=SELECT_USER_BY_ID, values={"id": user_id})
+        query = Users.select().where(Users.c.id == user_id)
+        user = await self.db.fetch_one(query=query)
+        if user is None:
+            raise UserNotFoundException("user was not found")
         return UserSingleResponseSchema(**user)
 
     async def update_user_password(self, user_id: int, user: UserUpdatePasswordSchema) -> UserSingleResponseSchema:
-        query_values = {"id": user_id, "new_password": user.new_password}
-        changed = await self.db.fetch_one(query=CHANGE_USER_PASSWORD, values=query_values)
+        query_values = {"password": hash_string(user.new_password)}
+        query = Users.update().where(Users.c.id == user_id).values(query_values)
+        changed = await self.db.fetch_one(query=query)
         return UserSingleResponseSchema(**changed)
 
-    async def delete_user_by_id(self, user_id: int) -> None:
-        query_values = {"user_id": user_id}
-        await self.db.fetch_one(query=DELETE_USER_BY_ID, values=query_values)
+    async def delete_user_by_id(self, user_id: int):
+        query = Users.delete().where(Users.c.id == user_id)
+        result = await self.db.execute(query=query)
+        return result

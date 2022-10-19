@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
-from starlette.status import HTTP_201_CREATED
+from starlette.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
+from fastapi_pagination import Page, paginate, Params
 
 from app.schemas.schemas import RegisterSchema, UserSchema, UserSingleResponseSchema, UserUpdatePasswordSchema
 from app.db.services.user import UserService
 from app.api.dependencies.database import get_repository
-from fastapi_pagination import Page, paginate, Params
 
 router = APIRouter()
 DEFAULT_PAGINATION_PAGE = 1
@@ -33,7 +33,7 @@ async def get_users(
         pagination_size: int = DEFAULT_PAGINATION_SIZE):
     users = await user_service.get_all_users()
     if users is None:
-        raise HTTPException(status_code=404, detail="user was not found")
+        return {}
     return paginate(users, Params(page=pagination_page, size=pagination_size))
 
 
@@ -41,8 +41,8 @@ async def get_users(
 async def get_user_by_id(user_id: int, user_service: UserService = Depends(get_repository(UserService))):
     try:
         user = await user_service.get_by_id(user_id)
-    except Exception:
-        raise HTTPException(status_code=404, detail="user was not found")
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
     return user
 
 
@@ -59,5 +59,9 @@ async def change_user_password(
 @router.delete("/user/{user_id}/delete")
 async def delete_user(
         user_id: int,
-        user_service: UserService = Depends(get_repository(UserService))) -> None:
-    await user_service.delete_user_by_id(user_id=user_id)
+        user_service: UserService = Depends(get_repository(UserService))):
+    user = await user_service.get_by_id(user_id)
+    if user is None:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="user was not found")
+    result = await user_service.delete_user_by_id(user_id=user_id)
+    return {"status": result}

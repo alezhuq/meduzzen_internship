@@ -60,7 +60,6 @@ class UserUpdatePasswordSchema(CoreSchema):
         return v
 
 
-
 """to get list of users :
 [UserSingleResponseSchema(user) for user in users]
 """
