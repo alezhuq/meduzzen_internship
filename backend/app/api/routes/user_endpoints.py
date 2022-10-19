@@ -16,10 +16,10 @@ def read_root():
     return {"status": "Working"}
 
 
-@router.post("/", response_model=UserSchema, name="user:create-user", status_code=HTTP_201_CREATED)
+@router.post("/", response_model=UserSingleResponseSchema, name="user:create-user", status_code=HTTP_201_CREATED)
 async def create_new_user(
         new_user: RegisterSchema,
-        user_service: UserService = Depends(get_repository(UserService))) -> UserSchema:
+        user_service: UserService = Depends(get_repository(UserService))) -> UserSingleResponseSchema:
     created_user = await user_service.create_user(new_user=new_user)
     if created_user is None:
         raise HTTPException(status_code=422, detail="can't create user")

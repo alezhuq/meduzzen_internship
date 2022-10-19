@@ -14,12 +14,12 @@ from app.schemas.schemas import (
 
 
 class UserService(BaseService):
-    async def create_user(self, *, new_user: RegisterSchema) -> UserSchema:
+    async def create_user(self, *, new_user: RegisterSchema) -> UserSingleResponseSchema:
         raw_values = new_user.dict()
         query_values = {
             "username": raw_values.get("username"),
             "email": raw_values.get("email"),
-            "password": hash_string(raw_values.get("password1")),
+            "password": hash_string(str.encode(raw_values.get("password1"))).decode(),
         }
 
         try:
@@ -28,8 +28,8 @@ class UserService(BaseService):
         except UniqueViolationError:
             raise UserAlreadyexistsException("user already exists")
 
-        query_values["id"] = user_id
-        user = UserSchema(**query_values)
+        query_values.pop("password")
+        user = UserSingleResponseSchema(**query_values)
 
         return user
 
@@ -46,7 +46,7 @@ class UserService(BaseService):
         return UserSingleResponseSchema(**user)
 
     async def update_user_password(self, user_id: int, user: UserUpdatePasswordSchema) -> UserSingleResponseSchema:
-        query_values = {"password": hash_string(user.new_password)}
+        query_values = {"password": hash_string(str.encode(user.new_password)).decode()}
         query = Users.update().where(Users.c.id == user_id).values(query_values)
         changed = await self.db.fetch_one(query=query)
         return UserSingleResponseSchema(**changed)
