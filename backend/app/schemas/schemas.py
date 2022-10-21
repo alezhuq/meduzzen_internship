@@ -37,8 +37,8 @@ class RegisterSchema(CoreSchema):
         return v
 
 
-class SignInSchema(CoreSchema):
-    username: str
+class UserSignInSchema(CoreSchema):
+    email: str
     password: str
 
 
@@ -60,11 +60,11 @@ class UserUpdatePasswordSchema(CoreSchema):
         return v
 
 
-"""to get list of users :
-[UserSingleResponseSchema(user) for user in users]
-"""
-
-
 class UserSingleResponseSchema(CoreSchema):
     username: str
     email: EmailStr
+
+
+class TokenSchema(CoreSchema):
+    access_token: str
+    token_type: str

@@ -1,7 +1,11 @@
+from typing import Optional
+
 import sqlalchemy as sa
 import datetime
+
+from asyncpg.exceptions import UniqueViolationError, InvalidPasswordError
+
 from app.db.services.base import BaseService
-from asyncpg.exceptions import UniqueViolationError
 from app.db.models.user import Users
 from app.core.security import hash_string, compare_hash
 from app.core.exceptions import UserNotFoundException, UserAlreadyexistsException
@@ -14,6 +18,23 @@ from app.schemas.schemas import (
 
 
 class UserService(BaseService):
+
+    # async def authenticate(self, *, email: str, password: str) -> Optional[UserSchema]:
+    #     user = await self.db.execute(query=query).first()
+    #
+    #     if not user:
+    #         return None
+    #     user_values = {
+    #         "id": user.get("id"),
+    #         "username": user.get("username"),
+    #         "password": user.get("password"),
+    #         "email": user.get("email"),
+    #     }
+    #     # don't forget to check format of password in db and to encode password from input
+    #     if not compare_hash(password.encode(), user.get("password")):
+    #         raise InvalidPasswordError
+    #     return UserSchema(**user_values)
+
     async def create_user(self, *, new_user: RegisterSchema) -> UserSingleResponseSchema:
         raw_values = new_user.dict()
         query_values = {
@@ -44,6 +65,13 @@ class UserService(BaseService):
         if user is None:
             raise UserNotFoundException("user was not found")
         return UserSingleResponseSchema(**user)
+
+    async def get_by_email(self, user_email: str) -> UserSchema:
+        query = Users.select().where(Users.c.email == user_email)
+        user = await self.db.fetch_one(query=query)
+        if user is None:
+            raise UserNotFoundException("user was not found")
+        return UserSchema(**user)
 
     async def update_user_password(self, user_id: int, user: UserUpdatePasswordSchema) -> UserSingleResponseSchema:
         query_values = {"password": hash_string(str.encode(user.new_password)).decode()}
