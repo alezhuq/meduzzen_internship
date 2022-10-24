@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from starlette.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
+from starlette.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND, HTTP_401_UNAUTHORIZED, HTTP_400_BAD_REQUEST
 from fastapi_pagination import Page, paginate, Params
 
-from app.schemas.schemas import RegisterSchema, UserSingleResponseSchema, UserUpdatePasswordSchema
-from app.db.services.user import UserService
-from app.api.dependencies.database import get_repository
+from app.schemas.user_schemas import RegisterSchema, UserSingleResponseSchema, UserUpdatePasswordSchema, UserSchema
+from app.db.services.userservice import UserService
+from app.api.dependencies.dependencies import get_repository, get_current_user
+from app.core.security import compare_hash
 
 router = APIRouter()
 DEFAULT_PAGINATION_PAGE = 1
@@ -38,7 +39,7 @@ async def get_users(
     return paginate(users, Params(page=page, size=pagination_size))
 
 
-@router.get("/user/{user_id}")
+@router.get("/user/id/{user_id}")
 async def get_user_by_id(user_id: int, user_service: UserService = Depends(get_repository(UserService))):
     try:
         user = await user_service.get_by_id(user_id)
@@ -47,23 +48,38 @@ async def get_user_by_id(user_id: int, user_service: UserService = Depends(get_r
     return user
 
 
-@router.put("/user/{user_id}/edit_password")
+@router.put("/user/id/{user_id}/edit_password")
 async def change_user_password(
         user_id: int,
         user: UserUpdatePasswordSchema,
-        user_service: UserService = Depends(get_repository(UserService))):
+        user_service: UserService = Depends(get_repository(UserService)),
+        current_user: UserSchema = Depends(get_current_user)):
+    try:
+        requested_user = await user_service.get_by_id(user_id=user_id)
+    except Exception as e:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e))
+    if not requested_user.email == current_user.email:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="you are not authorized as that user")
+    if not compare_hash(user.old_password.encode(), requested_user.password.encode()):
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="passwords do not match")
     user = await user_service.update_user_password(user_id, user)
     return user
 
 
-@router.delete("/user/{user_id}/delete")
+@router.delete("/user/id/{user_id}/delete")
 async def delete_user(
         user_id: int,
-        user_service: UserService = Depends(get_repository(UserService))):
-    user = await user_service.get_by_id(user_id)
-
-    if user is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="user was not found")
-    result = await user_service.delete_user_by_id(user_id=user_id)
-
-    return {"status": result}
+        user_service: UserService = Depends(get_repository(UserService)),
+        current_user: UserSchema = Depends(get_current_user)
+):
+    try:
+        requested_user = await user_service.get_by_id(user_id=user_id)
+    except Exception as e:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e))
+    if not requested_user.email == current_user.email:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="you are not authorized as that user")
+    try:
+        await user_service.delete_user_by_id(user_id=user_id)
+    except Exception as e:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e))
+    return {"status": "deleted"}

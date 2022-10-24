@@ -24,5 +24,7 @@ AUTH0_CONFIG = {
     "DOMAIN": config("DOMAIN", cast=str, default="your.domain.com"),
     "API_AUDIENCE": config("API_AUDIENCE", cast=str, default="your.audience.com"),
     "ISSUER": config("ISSUER", cast=str, default="https://your.domain.com/"),
-    "ALGORITHMS": config("ALGORITHMS", cast=str, default="RS256"),
+    "ALGORITHM": config("ALGORITHM", cast=str),
 }
+ALG = config("ALG", cast=str),
+SECRET_RSA_KEY = config("SECRET_RSA_KEY", cast=Secret, default="CHANGEME")

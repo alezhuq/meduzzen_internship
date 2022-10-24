@@ -1,15 +1,12 @@
-from typing import Optional
-
-import sqlalchemy as sa
-import datetime
-
-from asyncpg.exceptions import UniqueViolationError, InvalidPasswordError
+from asyncpg.exceptions import UniqueViolationError
+from fastapi import HTTPException
+from starlette.status import HTTP_400_BAD_REQUEST
 
 from app.db.services.base import BaseService
 from app.db.models.user import Users
-from app.core.security import hash_string, compare_hash
+from app.core.security import hash_string
 from app.core.exceptions import UserNotFoundException, UserAlreadyexistsException
-from app.schemas.schemas import (
+from app.schemas.user_schemas import (
     UserSchema,
     RegisterSchema,
     UserUpdatePasswordSchema,
@@ -18,22 +15,6 @@ from app.schemas.schemas import (
 
 
 class UserService(BaseService):
-
-    # async def authenticate(self, *, email: str, password: str) -> Optional[UserSchema]:
-    #     user = await self.db.execute(query=query).first()
-    #
-    #     if not user:
-    #         return None
-    #     user_values = {
-    #         "id": user.get("id"),
-    #         "username": user.get("username"),
-    #         "password": user.get("password"),
-    #         "email": user.get("email"),
-    #     }
-    #     # don't forget to check format of password in db and to encode password from input
-    #     if not compare_hash(password.encode(), user.get("password")):
-    #         raise InvalidPasswordError
-    #     return UserSchema(**user_values)
 
     async def create_user(self, *, new_user: RegisterSchema) -> UserSingleResponseSchema:
         raw_values = new_user.dict()
@@ -59,12 +40,12 @@ class UserService(BaseService):
         users = await self.db.fetch_all(query=query)
         return [UserSingleResponseSchema(**user) for user in users]
 
-    async def get_by_id(self, user_id: int) -> UserSingleResponseSchema:
+    async def get_by_id(self, user_id: int) -> UserSchema:
         query = Users.select().where(Users.c.id == user_id)
         user = await self.db.fetch_one(query=query)
         if user is None:
             raise UserNotFoundException("user was not found")
-        return UserSingleResponseSchema(**user)
+        return UserSchema(**user)
 
     async def get_by_email(self, user_email: str) -> UserSchema:
         query = Users.select().where(Users.c.email == user_email)
@@ -73,11 +54,14 @@ class UserService(BaseService):
             raise UserNotFoundException("user was not found")
         return UserSchema(**user)
 
-    async def update_user_password(self, user_id: int, user: UserUpdatePasswordSchema) -> UserSingleResponseSchema:
+    async def update_user_password(self, user_id: int, user: UserUpdatePasswordSchema) -> dict:
         query_values = {"password": hash_string(str.encode(user.new_password)).decode()}
         query = Users.update().where(Users.c.id == user_id).values(query_values)
-        changed = await self.db.fetch_one(query=query)
-        return UserSingleResponseSchema(**changed)
+        try:
+            await self.db.fetch_one(query=query)
+        except Exception:
+            raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="error updating the password")
+        return {"status": "changed"}
 
     async def delete_user_by_id(self, user_id: int):
         query = Users.delete().where(Users.c.id == user_id)
