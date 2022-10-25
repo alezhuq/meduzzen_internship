@@ -35,16 +35,16 @@ class VerifyToken(object):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
         return decoded
 
-    def verify(self):
+    def verify(self) ->dict:
         # This gets the 'kid' from the passed tokenSS
         try:
             self.signing_key = self.jwks_client.get_signing_key_from_jwt(
                 self.token
             ).key
         except jwt.exceptions.PyJWKClientError as error:
-            return HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=error.__str__())
+            raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=error.__str__())
         except jwt.exceptions.DecodeError as error:
-            return HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=error.__str__())
+            raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=error.__str__())
 
         try:
             payload = jwt.decode(
@@ -55,5 +55,5 @@ class VerifyToken(object):
                 issuer=self.config["ISSUER"],
             )
         except Exception as e:
-            return HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+            raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
         return payload

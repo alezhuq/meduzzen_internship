@@ -19,6 +19,7 @@ from app.core.token import VerifyToken
 
 Users = Users.__table__
 
+
 class UserService(BaseService):
 
     async def create_user(self, *, new_user: RegisterSchema) -> UserSchema:
@@ -80,7 +81,7 @@ class UserService(BaseService):
 class TokenService(object):
     @staticmethod
     async def create_from_auth0(token: str = Depends(HTTPBearer()),
-                          user_service: UserService = Depends(UserService)):
+                                user_service: UserService = Depends(UserService)):
         result = VerifyToken(token.credentials).verify()
         if result.get('status'):
             return HTTPException(status_code=HTTP_400_BAD_REQUEST)

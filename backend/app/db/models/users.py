@@ -5,6 +5,7 @@ import datetime
 
 Base = declarative_base()
 
+
 class Users(Base):
     __tablename__ = 'Users'
 
@@ -14,6 +15,3 @@ class Users(Base):
     password = sa.Column(sa.String, primary_key=True)
     register_date = sa.Column(sa.DateTime, default=datetime.datetime.utcnow)
     is_active = sa.Column(sa.Boolean)
-
-
-

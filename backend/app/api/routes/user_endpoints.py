@@ -38,7 +38,6 @@ async def get_users(
         pagination_size: int = DEFAULT_PAGINATION_SIZE,
         user_service: UserService = Depends(get_repository(UserService)),
 ) -> Union[dict, AbstractPage[UserSingleResponseSchema]]:
-
     page = int(pagination_page)
     users = await user_service.get_all_users()
     if users is None:
@@ -46,12 +45,12 @@ async def get_users(
     return paginate(users, Params(page=page, size=pagination_size))
 
 
-@router.get("/user/id/{user_id}")
+@router.get("/user/id/{user_id}", response_model=UserSchema)
 async def get_user_by_id(
         user_id: int,
         user_service: UserService = Depends(get_repository(UserService)),
         current_user: UserSchema = Depends(get_current_user)
-):
+) -> UserSchema:
     try:
         user = await user_service.get_by_id(user_id)
     except Exception as e:
@@ -61,7 +60,7 @@ async def get_user_by_id(
     return user
 
 
-@router.put("/user/id/{user_id}/edit_password")
+@router.put("/user/id/{user_id}/edit_password", response_model=SuccessfulResult)
 async def change_user_password(
         user_id: int,
         user: UserUpdatePasswordSchema,
@@ -79,7 +78,7 @@ async def change_user_password(
     return request
 
 
-@router.delete("/user/id/{user_id}/delete")
+@router.delete("/user/id/{user_id}/delete", response_model=SuccessfulResult)
 async def delete_user(
         user_id: int,
         user_service: UserService = Depends(get_repository(UserService)),
