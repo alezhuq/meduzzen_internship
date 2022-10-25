@@ -7,7 +7,7 @@ from starlette.exceptions import HTTPException
 from starlette.requests import Request
 
 from app.db.services.base import BaseService
-from app.db.services.userservice import UserService
+from app.db.services.userservice import UserService, TokenService
 from app.schemas.user_schemas import UserSchema
 from app.core.token import VerifyToken
 
@@ -31,15 +31,12 @@ async def get_current_user(
     try:
         payload = VerifyToken.verify_custom(token.credentials)
         email: str = payload.get("email")
-    except Exception:
-        payload = VerifyToken(token.credentials).verify()
-        if payload.get('status'):
+        if email is None:
             raise cred_exception
-        email = payload.get("https://HRassessment-project.com/email")
+        user = await user_service.get_by_email(user_email=email)
+    except Exception:
+        user = TokenService.create_from_auth0()
 
-    if email is None:
-        raise cred_exception
-    user = await user_service.get_by_email(user_email=email)
     if user is None:
         raise cred_exception
     return user

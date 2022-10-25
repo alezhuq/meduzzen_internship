@@ -68,3 +68,7 @@ class UserSingleResponseSchema(CoreSchema):
 class TokenSchema(CoreSchema):
     access_token: str
     token_type: str
+
+
+class SuccessfulResult(CoreSchema):
+    status: str

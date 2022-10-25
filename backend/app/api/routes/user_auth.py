@@ -2,13 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from starlette.status import HTTP_400_BAD_REQUEST
 
 from app.schemas.user_schemas import  UserSignInSchema
-from app.db.services.userservice import UserService
+from app.db.services.userservice import UserService, TokenService
 from app.api.dependencies.dependencies import get_repository
 from app.core.token import VerifyToken
 from fastapi.security import HTTPBearer
 from app.core.security import compare_hash
 from app.schemas.token_schemas import Token
-from app.db.services.tokenservice import TokenService
 
 router = APIRouter()
 
