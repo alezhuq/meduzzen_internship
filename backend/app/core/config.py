@@ -18,5 +18,13 @@ DATABASE_URL = config(
     default=f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}:{POSTGRES_PORT}/{POSTGRES_DB}"
 )
 
-
 REDIS_URL = f"redis://{REDIS_HOST}"
+
+AUTH0_CONFIG = {
+    "DOMAIN": config("DOMAIN", cast=str, default="your.domain.com"),
+    "API_AUDIENCE": config("API_AUDIENCE", cast=str, default="your.audience.com"),
+    "ISSUER": config("ISSUER", cast=str, default="https://your.domain.com/"),
+    "ALGORITHM": config("ALGORITHM", cast=str),
+}
+ALG = config("ALG", cast=str),
+SECRET_RSA_KEY = config("SECRET_RSA_KEY", cast=Secret, default="CHANGEME")
