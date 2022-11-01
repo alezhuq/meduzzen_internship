@@ -1,8 +1,8 @@
-class UserNotFoundException(Exception):
-    """Raised when user was not found in database"""
+class NotFoundException(Exception):
+    """Raised when smth was not found in database"""
     pass
 
 
-class UserAlreadyexistsException(Exception):
-    """Raised when user creation failed due to unique constraint"""
+class AlreadyExistsException(Exception):
+    """Raised when creation of smth failed due to unique constraint"""
     pass

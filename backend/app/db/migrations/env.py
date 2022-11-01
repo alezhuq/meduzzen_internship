@@ -8,6 +8,9 @@ import logging
 # appending the app directory to path so that we can import config
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[3]))
 from app.core.config import DATABASE_URL  # noqa
+from app.db.models.base import BaseModel
+
+target_metadata = BaseModel.metadata
 
 # Alembic Config object, (access to values within the .ini)
 config = alembic.context.config
@@ -20,6 +23,8 @@ def run_migrations_online() -> None:
     """
     Run migrations in 'online' mode
     """
+    alembic_config = config.get_section(config.config_ini_section)
+    alembic_config['sqlalchemy.url'] = str(DATABASE_URL)
     connectable = config.attributes.get("connection", None)
     config.set_main_option("sqlalchemy.url", str(DATABASE_URL))
     if connectable is None:
@@ -32,7 +37,7 @@ def run_migrations_online() -> None:
     with connectable.connect() as connection:
         alembic.context.configure(
             connection=connection,
-            target_metadata=None
+            target_metadata=target_metadata
         )
         with alembic.context.begin_transaction():
             alembic.context.run_migrations()

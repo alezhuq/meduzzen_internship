@@ -1,14 +1,16 @@
 import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from app.api.routes import user_endpoints, user_auth
+from app.api.routes import users, user_auth, companies, invites
 
 from app.core import tasks
 
 app = FastAPI()
 
-app.include_router(user_endpoints.router)
+app.include_router(users.router)
+app.include_router(companies.router)
 app.include_router(user_auth.router)
+app.include_router(invites.router)
 
 app.add_middleware(
     CORSMiddleware,

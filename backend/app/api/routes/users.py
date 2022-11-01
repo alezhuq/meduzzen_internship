@@ -10,6 +10,7 @@ from app.schemas.user_schemas import RegisterSchema, UserSingleResponseSchema, U
 from app.db.services.userservice import UserService
 from app.api.dependencies.dependencies import get_repository, get_current_user
 from app.core.security import compare_hash
+from app.core.exceptions import AlreadyExistsException
 
 router = APIRouter()
 DEFAULT_PAGINATION_PAGE = 1
@@ -26,23 +27,24 @@ async def create_new_user(
         new_user: RegisterSchema,
         user_service: UserService = Depends(get_repository(UserService)),
 ) -> UserSchema:
-    created_user = await user_service.create_user(new_user=new_user)
-    if created_user is None:
+    try:
+        created_user = await user_service.create_user(new_user=new_user)
+    except AlreadyExistsException:
         raise HTTPException(status_code=422, detail="can't create user")
     return created_user
 
 
 @router.get("/user/all", response_model=Page[UserSingleResponseSchema])
 async def get_users(
-        pagination_page: str = DEFAULT_PAGINATION_PAGE,
-        pagination_size: int = DEFAULT_PAGINATION_SIZE,
+        page: str = DEFAULT_PAGINATION_PAGE,
+        size: int = DEFAULT_PAGINATION_SIZE,
         user_service: UserService = Depends(get_repository(UserService)),
 ) -> Union[dict, AbstractPage[UserSingleResponseSchema]]:
-    page = int(pagination_page)
+
     users = await user_service.get_all_users()
     if users is None:
         return {}
-    return paginate(users, Params(page=page, size=pagination_size))
+    return paginate(users, Params(page=page, size=size))
 
 
 @router.get("/user/id/{user_id}", response_model=UserSchema)
@@ -60,7 +62,7 @@ async def get_user_by_id(
     return user
 
 
-@router.put("/user/id/{user_id}/edit_password", response_model=SuccessfulResult)
+@router.put("/user/id/{user_id}", response_model=SuccessfulResult)
 async def change_user_password(
         user_id: int,
         user: UserUpdatePasswordSchema,
@@ -78,7 +80,7 @@ async def change_user_password(
     return request
 
 
-@router.delete("/user/id/{user_id}/delete", response_model=SuccessfulResult)
+@router.delete("/user/id/{user_id}", response_model=SuccessfulResult)
 async def delete_user(
         user_id: int,
         user_service: UserService = Depends(get_repository(UserService)),

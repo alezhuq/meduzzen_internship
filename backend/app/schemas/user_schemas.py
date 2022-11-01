@@ -2,11 +2,11 @@ from pydantic import validator, EmailStr
 from email_validator import validate_email, EmailNotValidError
 from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 
-from .core import CoreSchema, UserMixin
+from .core import CoreSchema, IdMixin
 from fastapi.exceptions import HTTPException
 
 
-class UserSchema(UserMixin, CoreSchema):
+class UserSchema(IdMixin, CoreSchema):
     username: str
     password: str
     email: EmailStr
