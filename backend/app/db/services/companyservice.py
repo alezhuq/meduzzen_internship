@@ -187,7 +187,7 @@ class CompanyService(BaseService):
             raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="can't request invite")
         return SuccessfulResult(status="changed")
 
-    async def get_all_companies(self, limit: int = 200, offset: int = 0):
+    async def get_all_companies(self, limit: int = 200, offset: int = 0) -> list[CompanyResponseSchema]:
         query = Companies.select().where(Companies.c.hidden == False).limit(limit).offset(offset)
         companies = await self.db.fetch_all(query=query)
         return [CompanyResponseSchema(**company) for company in companies]

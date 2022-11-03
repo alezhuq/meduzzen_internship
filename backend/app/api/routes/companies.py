@@ -25,10 +25,10 @@ async def get_all_companies(
         current_user: UserSchema = Depends(get_current_user),
         page: int = DEFAULT_PAGINATION_PAGE,
         size: int = DEFAULT_PAGINATION_SIZE,
-) -> Union[dict, AbstractPage[CompanyResponseSchema]]:
+) -> AbstractPage[CompanyResponseSchema]:
     companies = await company_service.get_all_companies()
     if not companies:
-        return {}
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="no companies")
     return paginate(companies, Params(page=page, size=size))
 
 
