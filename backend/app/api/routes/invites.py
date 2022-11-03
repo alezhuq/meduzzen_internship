@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from starlette.status import HTTP_403_FORBIDDEN
+from starlette.status import HTTP_403_FORBIDDEN, HTTP_400_BAD_REQUEST
 
 from app.schemas.user_schemas import UserSchema, SuccessfulResult
 from app.db.services.userservice import UserService
@@ -20,13 +20,10 @@ async def invite(
         company_service: CompanyService = Depends(get_repository(CompanyService)),
         current_user: UserSchema = Depends(get_current_user)
 ) -> SuccessfulResult:
-    is_owner = await company_service.check_owner(company_id=company_id, user_id=current_user.id)
-    if not is_owner:
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
-            detail="you do not have permissions to create this invitation"
-        )
-    result = await company_service.invite_to_company(company_id=company_id, user_id=invited_user_id)
+    try:
+        result = await company_service.invite_to_company(company_id=company_id, user_id=invited_user_id, owner_id=current_user.id)
+    except Exception:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="you don't have permissions to do this")
     return result
 
 
@@ -40,32 +37,36 @@ async def request_invite(
     return result
 
 
-@router.put('/company/{company_id}/reply')
-async def reply_to_invite(
+@router.put('/company/{company_id}/reply', response_model=SuccessfulResult)
+async def owner_reply_to_invite(
         user_id: int,
         company_id: int,
         reply: InviteStatus,
         company_service: CompanyService = Depends(get_repository(CompanyService)),
         current_user: UserSchema = Depends(get_current_user)
 ) -> SuccessfulResult:
-    is_owner = await company_service.check_owner(company_id=company_id, user_id=current_user)
-    if not is_owner:
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
-            detail="you do not have permissions to reply to this invite"
+    try:
+        result = await company_service.reply_to_invite_request(
+            user_id=user_id,
+            company_id=company_id,
+            owner_id=current_user.id,
+            reply=reply
         )
-    result = await company_service.reply_to_invite_request(user_id=user_id, company_id=company_id, reply=reply)
+    except Exception:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="you don't have permissions to do this")
     return result
 
 
-@router.put('/company/{company_id}/respond')
-async def reply_to_invite(
+@router.put('/company/{company_id}/respond', response_model=SuccessfulResult)
+async def user_reply_to_invite(
         company_id: int,
         reply: bool,
         company_service: CompanyService = Depends(get_repository(CompanyService)),
         current_user: UserSchema = Depends(get_current_user)
 ) -> SuccessfulResult:
-
-    result = await company_service.accept_decline_invite(user_id=current_user.id, company_id=company_id, reply=reply)
+    try:
+        result = await company_service.accept_decline_invite(user_id=current_user.id, company_id=company_id, accept=reply)
+    except Exception as e:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
     return result
 

@@ -19,11 +19,9 @@ class CompanyCreatechema(CoreSchema):
     hidden: bool
 
 
-class UserInCompanySchema(CoreSchema):
-    user = UserSchema
-    company = CompanySchema
+class MemberSchema(CoreSchema):
+    user_id: int
+    company_id: int
+    is_owner: bool
+    is_staff: bool
 
-
-class InviteSchema(CoreSchema):
-    user = UserSchema
-    company = CompanySchema

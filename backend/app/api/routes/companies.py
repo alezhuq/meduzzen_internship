@@ -51,13 +51,15 @@ async def update_company_status(
         company_service: CompanyService = Depends(get_repository(CompanyService)),
         current_user: UserSchema = Depends(get_current_user)
 ) -> SuccessfulResult:
-    is_owner = await company_service.check_owner(company_id=company_id, user_id=current_user.id)
-    if not is_owner:
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
-            detail="you do not have permissions to change company status"
+    try:
+        result = await company_service.change_visibility(
+            user_id=current_user.id,
+            company_id=company_id,
+            new_status=hidden,
+            owner_id=current_user.id
         )
-    result = await company_service.change_hidden(company_id=company_id, new_status=hidden)
+    except Exception:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="you don't have permissions to do this")
     return result
 
 
@@ -68,13 +70,15 @@ async def update_company_details(
         company_service: CompanyService = Depends(get_repository(CompanyService)),
         current_user: UserSchema = Depends(get_current_user)
 ) -> SuccessfulResult:
-    is_owner = await company_service.check_owner(company_id=company_id, user_id=current_user.id)
-    if not is_owner:
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
-            detail="you do not have permissions to change company details"
+    try:
+        result = await company_service.change_name_description(
+            user_id=current_user.id,
+            company_id=company_id,
+            company=details,
+            owner_id=current_user.id
         )
-    result = await company_service.change_name_description(company_id=company_id, company=details)
+    except Exception:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="you don't have permissions to do this")
     return result
 
 
@@ -86,27 +90,46 @@ async def update_staff_status(
         company_service: CompanyService = Depends(get_repository(CompanyService)),
         current_user: UserSchema = Depends(get_current_user)
 ) -> SuccessfulResult:
-    is_owner = await company_service.check_owner(company_id=company_id, user_id=current_user.id)
-    if not is_owner:
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
-            detail="you do not have permissions to change company details"
+    try:
+        result = await company_service.change_staff_status(
+            company_id=company_id,
+            user_id=current_user.id,
+            changed_user_id=user_id,
+            new_status=is_staff,
+            owner_id=current_user.id
         )
-    result = await company_service.change_staff_status(company_id=company_id, user_id=user_id, new_status=is_staff)
+    except Exception:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="you don't have permissions to do this")
     return result
 
 
 @router.delete("/{company_id}", response_model=SuccessfulResult)
-async def update_company_details(
+async def delete_company(
         company_id: int,
         company_service: CompanyService = Depends(get_repository(CompanyService)),
         current_user: UserSchema = Depends(get_current_user)
 ) -> SuccessfulResult:
-    is_owner = await company_service.check_owner(company_id=company_id, user_id=current_user.id)
-    if not is_owner:
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
-            detail="you do not have permissions to delete this company"
+    try:
+        result = await company_service.delete_company(company_id=company_id, owner_id=current_user.id)
+    except Exception:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="you don't have permissions to do this")
+    return result
+
+
+@router.delete("/{company_id}/member/{member_id}", response_model=SuccessfulResult)
+async def kick_member(
+        member_id: int,
+        company_id: int,
+        company_service: CompanyService = Depends(get_repository(CompanyService)),
+        current_user: UserSchema = Depends(get_current_user)
+) -> SuccessfulResult:
+    try:
+        result = await company_service.kick_from_company(
+            user_id=current_user.id,
+            member_id=member_id,
+            company_id=company_id,
+            owner_id=current_user.id
         )
-    result = await company_service.delete_company(company_id=company_id)
+    except Exception:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="you don't have permissions to do this")
     return result

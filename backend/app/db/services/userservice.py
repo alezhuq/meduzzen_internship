@@ -6,7 +6,7 @@ from fastapi.security import HTTPBearer
 from starlette.status import HTTP_400_BAD_REQUEST
 
 from app.db.services.base import BaseService
-from app.db.models.user import Users
+from app.db.models.user import User
 from app.core.security import hash_string
 from app.core.exceptions import NotFoundException, AlreadyExistsException
 from app.schemas.user_schemas import (
@@ -17,7 +17,7 @@ from app.schemas.user_schemas import (
 )
 from app.core.token import VerifyToken
 
-Users = Users.__table__
+Users = User.__table__
 
 
 class UserService(BaseService):
