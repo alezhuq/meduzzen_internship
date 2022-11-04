@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from starlette.status import HTTP_400_BAD_REQUEST
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 
 from app.schemas.user_schemas import UserSignInSchema, UserSchema
 from app.db.services.userservice import UserService, TokenService
@@ -8,6 +8,7 @@ from app.core.token import VerifyToken
 from fastapi.security import HTTPBearer
 from app.core.security import compare_hash
 from app.schemas.token_schemas import Token
+from app.core.exceptions import NotFoundException
 
 router = APIRouter()
 
@@ -20,7 +21,10 @@ async def authenticate(
         user_service: UserService = Depends(get_repository(UserService))
 ) -> Token:
     """default authentication"""
-    user = await user_service.get_by_email(user_email=login.email)
+    try:
+        user = await user_service.get_by_email(user_email=login.email)
+    except NotFoundException as e:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e))
     user_data = user.dict()
     user_email = user_data.get("email")
     user_id = user_data.get("id")
@@ -33,12 +37,15 @@ async def authenticate(
     )
 
 
-@router.get("/api/private", response_model=UserSchema)
+@router.get("/api/private", response_model=Token)
 async def private(
         token: str = Depends(TOKEN_AUTH_SCHEME),
         user_service: UserService = Depends(get_repository(UserService))
-) -> UserSchema:
+) -> Token:
     """auth0 authentication/registration"""
     user = await TokenService.create_from_auth0(token, user_service)
-    return user
+    return Token(
+        token=VerifyToken.create_custom(user_id=user.id, data={"email": user.email})
+    )
+
 

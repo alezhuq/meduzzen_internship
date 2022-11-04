@@ -6,9 +6,9 @@ from fastapi.security import HTTPBearer
 from starlette.status import HTTP_400_BAD_REQUEST
 
 from app.db.services.base import BaseService
-from app.db.models.users import Users
+from app.db.models.user import User
 from app.core.security import hash_string
-from app.core.exceptions import UserNotFoundException, UserAlreadyexistsException
+from app.core.exceptions import NotFoundException, AlreadyExistsException
 from app.schemas.user_schemas import (
     UserSchema,
     RegisterSchema,
@@ -17,7 +17,7 @@ from app.schemas.user_schemas import (
 )
 from app.core.token import VerifyToken
 
-Users = Users.__table__
+Users = User.__table__
 
 
 class UserService(BaseService):
@@ -34,7 +34,7 @@ class UserService(BaseService):
             query = Users.insert()
             user_id = await self.db.execute(query=query, values=query_values)
         except UniqueViolationError:
-            raise UserAlreadyexistsException("user already exists")
+            raise AlreadyExistsException(detail="user already exists")
 
         query_values.setdefault("id", user_id)
         user = UserSchema(**query_values)
@@ -44,25 +44,27 @@ class UserService(BaseService):
     async def get_all_users(self, limit: int = 200, offset: int = 0) -> list[UserSingleResponseSchema]:
         query = Users.select().limit(limit).offset(offset)
         users = await self.db.fetch_all(query=query)
+        if users is None:
+            raise NotFoundException(detail="can't find users")
         return [UserSingleResponseSchema(**user) for user in users]
 
     async def get_by_id(self, user_id: int) -> UserSchema:
         query = Users.select().where(Users.c.id == user_id)
         user = await self.db.fetch_one(query=query)
         if user is None:
-            raise UserNotFoundException("user was not found")
+            raise NotFoundException("user was not found")
         return UserSchema(**user)
 
     async def get_by_email(self, user_email: str) -> UserSchema:
         query = Users.select().where(Users.c.email == user_email)
         user = await self.db.fetch_one(query=query)
         if user is None:
-            raise UserNotFoundException("user was not found")
+            raise NotFoundException("user was not found")
         return UserSchema(**user)
 
     async def update_user_password(self, user_id: int, user: UserUpdatePasswordSchema) -> SuccessfulResult:
         query_values = {"password": hash_string(str.encode(user.new_password)).decode()}
-        query = Users.update().where(user.c.id == user_id).values(query_values)
+        query = Users.update().where(Users.c.id == user_id).values(query_values)
         try:
             await self.db.fetch_one(query=query)
         except Exception:
@@ -88,7 +90,7 @@ class TokenService(object):
         user_email = result.get("email")
         try:
             user = await user_service.get_by_email(user_email=user_email)
-        except UserNotFoundException:
+        except NotFoundException:
             password = str(time.time()).encode()
             new_user = RegisterSchema(
                 username=user_email,

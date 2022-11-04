@@ -6,5 +6,5 @@ class CoreSchema(BaseModel):
     pass
 
 
-class UserMixin(BaseModel):
+class IdMixin(BaseModel):
     id: int
