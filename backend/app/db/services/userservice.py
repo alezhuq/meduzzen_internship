@@ -44,6 +44,8 @@ class UserService(BaseService):
     async def get_all_users(self, limit: int = 200, offset: int = 0) -> list[UserSingleResponseSchema]:
         query = Users.select().limit(limit).offset(offset)
         users = await self.db.fetch_all(query=query)
+        if users is None:
+            raise NotFoundException(detail="can't find users")
         return [UserSingleResponseSchema(**user) for user in users]
 
     async def get_by_id(self, user_id: int) -> UserSchema:

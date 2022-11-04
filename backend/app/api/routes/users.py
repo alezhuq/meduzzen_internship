@@ -36,11 +36,9 @@ async def get_users(
         page: str = DEFAULT_PAGINATION_PAGE,
         size: int = DEFAULT_PAGINATION_SIZE,
         user_service: UserService = Depends(get_repository(UserService)),
-) -> Union[dict, AbstractPage[UserSingleResponseSchema]]:
+) -> AbstractPage[UserSingleResponseSchema]:
 
     users = await user_service.get_all_users()
-    if users is None:
-        return {}
     return paginate(users, Params(page=page, size=size))
 
 
