@@ -34,7 +34,7 @@ class UserService(BaseService):
             query = Users.insert()
             user_id = await self.db.execute(query=query, values=query_values)
         except UniqueViolationError:
-            raise AlreadyExistsException("user already exists")
+            raise AlreadyExistsException(detail="user already exists")
 
         query_values.setdefault("id", user_id)
         user = UserSchema(**query_values)

@@ -10,6 +10,7 @@ from app.db.services.userservice import UserService
 from app.db.services.companyservice import CompanyService
 from app.api.dependencies.dependencies import get_repository, get_current_user
 from app.schemas.company_schemas import CompanySchema, CompanyResponseSchema, CompanyCreatechema
+from app.core.exceptions import NotFoundException
 
 router = APIRouter(
     prefix="/company",
@@ -28,7 +29,7 @@ async def get_all_companies(
 ) -> AbstractPage[CompanyResponseSchema]:
     companies = await company_service.get_all_companies()
     if not companies:
-        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="no companies")
+        raise NotFoundException(detail="no companies found")
     return paginate(companies, Params(page=page, size=size))
 
 

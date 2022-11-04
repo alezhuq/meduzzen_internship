@@ -27,10 +27,7 @@ async def create_new_user(
         new_user: RegisterSchema,
         user_service: UserService = Depends(get_repository(UserService)),
 ) -> UserSchema:
-    try:
-        created_user = await user_service.create_user(new_user=new_user)
-    except AlreadyExistsException:
-        raise HTTPException(status_code=422, detail="can't create user")
+    created_user = await user_service.create_user(new_user=new_user)
     return created_user
 
 

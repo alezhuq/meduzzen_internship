@@ -67,6 +67,6 @@ async def user_reply_to_invite(
     try:
         result = await company_service.accept_decline_invite(user_id=current_user.id, company_id=company_id, accept=reply)
     except Exception as e:
-        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="can't reply to invite")
     return result
 

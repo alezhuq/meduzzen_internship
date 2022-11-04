@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
+from ..services.base import InviteStatus
 
 from .base import BaseModel
 
@@ -30,6 +31,6 @@ class Invite(BaseModel):
     user_id = sa.Column(sa.ForeignKey("user.id", ondelete="CASCADE"), primary_key=True)
     company_id = sa.Column(sa.ForeignKey("company.id", ondelete="CASCADE"), primary_key=True)
     # pending status can contain one of these values : accepted, declined, requested, pending (default - pending)
-    pending_status = sa.Column(sa.String, default="pending")
+    status = sa.Column(sa.Enum(InviteStatus), default=str(InviteStatus.pending))
     users = relationship("User", back_populates="invites", cascade="all, delete")
     companies = relationship("Company", back_populates="invites", cascade="all, delete")

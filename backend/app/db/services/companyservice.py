@@ -8,17 +8,10 @@ from app.db.models.company import Company, Member, Invite
 from app.db.models.user import User
 from app.schemas.company_schemas import CompanySchema, CompanyResponseSchema, CompanyCreatechema, MemberSchema
 from app.schemas.user_schemas import UserSchema, SuccessfulResult
-from strenum import StrEnum
+from .base import InviteStatus
 
 Companies = Company.__table__
 UsersInCompanies = Member.__table__
-
-
-class InviteStatus(StrEnum):
-    accepted = "accepted",
-    declined = "declined",
-    requested = "requested",
-    pending = "pending"
 
 
 def check_owner(func):
@@ -31,7 +24,7 @@ def check_owner(func):
 
         except Exception:
             raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="invalid user or company")
-        if user and user.is_owner is True:
+        if user and user.is_owner:
             return await func(*args, **kwargs)
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="you don't have permissions to do this")
 
@@ -164,7 +157,8 @@ class CompanyService(BaseService):
             invite = session.query(Invite).filter_by(user_id=user_id, company_id=company_id).first()
             if invite.pending_status == InviteStatus.pending:
                 reply = InviteStatus.accepted if accept else InviteStatus.declined
-                session.query(Invite).filter_by(user_id=user_id, company_id=company_id).update({"pending_status": reply})
+                session.query(Invite).filter_by(user_id=user_id, company_id=company_id).update(
+                    {"pending_status": reply})
                 session.commit()
             else:
                 raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="can respond only to pending invites")
