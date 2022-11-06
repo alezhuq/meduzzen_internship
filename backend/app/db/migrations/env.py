@@ -8,7 +8,13 @@ import logging
 # appending the app directory to path so that we can import config
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[3]))
 from app.core.config import DATABASE_URL  # noqa
+
+
+# do not delete this
 from app.db.models.base import BaseModel
+import app.db.models.user
+import app.db.models.company
+import app.db.models.quiz
 
 target_metadata = BaseModel.metadata
 

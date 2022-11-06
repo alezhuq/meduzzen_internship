@@ -1,12 +1,10 @@
-from typing import Union
-
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi_pagination import Params, paginate, Page
 from fastapi_pagination.bases import AbstractPage
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_401_UNAUTHORIZED, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
 
-from app.schemas.user_schemas import UserSchema, SuccessfulResult
-from app.db.services.userservice import UserService
+from app.schemas.user_schemas import UserSchema
+from app.schemas.core import SuccessfulResult
 from app.db.services.companyservice import CompanyService
 from app.api.dependencies.dependencies import get_repository, get_current_user
 from app.schemas.company_schemas import CompanySchema, CompanyResponseSchema, CompanyCreatechema
@@ -33,7 +31,7 @@ async def get_all_companies(
     return paginate(companies, Params(page=page, size=size))
 
 
-@router.post("/{company_id}", response_model=SuccessfulResult)
+@router.post("/", response_model=SuccessfulResult)
 async def create_new_company(
         new_company: CompanyCreatechema,
         company_service: CompanyService = Depends(get_repository(CompanyService)),

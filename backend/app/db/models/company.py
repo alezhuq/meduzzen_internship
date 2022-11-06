@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from ..services.base import InviteStatus
 
 from .base import BaseModel
-
+from .quiz import Quiz # without this import company table doesn't work
 
 class Company(BaseModel):
     __tablename__ = "company"
@@ -14,6 +14,7 @@ class Company(BaseModel):
     hidden = sa.Column(sa.Boolean, default=False)
     users = relationship("Member", back_populates="companies")
     invites = relationship("Invite", back_populates="companies")
+    quizzes = relationship("Quiz", back_populates="company")
 
 
 class Member(BaseModel):

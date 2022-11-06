@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from starlette.status import HTTP_403_FORBIDDEN, HTTP_400_BAD_REQUEST
 
-from app.schemas.user_schemas import UserSchema, SuccessfulResult
+from app.schemas.user_schemas import UserSchema
+from app.schemas.core import SuccessfulResult
 from app.db.services.userservice import UserService
 from app.db.services.companyservice import CompanyService, InviteStatus
 from app.api.dependencies.dependencies import get_repository, get_current_user

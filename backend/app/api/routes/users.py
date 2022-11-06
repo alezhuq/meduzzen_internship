@@ -5,13 +5,12 @@ from fastapi_pagination.bases import AbstractPage
 from starlette.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND, HTTP_401_UNAUTHORIZED, HTTP_400_BAD_REQUEST
 from fastapi_pagination import Page, paginate, Params
 
-from app.schemas.user_schemas import RegisterSchema, UserSingleResponseSchema, UserUpdatePasswordSchema, UserSchema, \
-    SuccessfulResult
+from app.schemas.user_schemas import RegisterSchema, UserSingleResponseSchema, UserUpdatePasswordSchema, UserSchema
+from app.schemas.core import SuccessfulResult
 from app.db.services.userservice import UserService
 from app.api.dependencies.dependencies import get_repository, get_current_user
 from app.core.security import compare_hash
 from app.core.exceptions import AlreadyExistsException
-
 router = APIRouter()
 DEFAULT_PAGINATION_PAGE = 1
 DEFAULT_PAGINATION_SIZE = 10

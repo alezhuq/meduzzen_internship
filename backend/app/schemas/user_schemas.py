@@ -70,5 +70,3 @@ class TokenSchema(CoreSchema):
     token_type: str
 
 
-class SuccessfulResult(CoreSchema):
-    status: str

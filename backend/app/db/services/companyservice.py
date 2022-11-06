@@ -7,7 +7,8 @@ from .base import BaseService
 from app.db.models.company import Company, Member, Invite
 from app.db.models.user import User
 from app.schemas.company_schemas import CompanySchema, CompanyResponseSchema, CompanyCreatechema, MemberSchema
-from app.schemas.user_schemas import UserSchema, SuccessfulResult
+from app.schemas.user_schemas import UserSchema
+from app.schemas.core import SuccessfulResult
 from .base import InviteStatus
 
 Companies = Company.__table__
@@ -25,6 +26,23 @@ def check_owner(func):
         except Exception:
             raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="invalid user or company")
         if user and user.is_owner:
+            return await func(*args, **kwargs)
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="you don't have permissions to do this")
+
+    return wrapper
+
+
+def check_staff(func):
+    async def wrapper(*args, **kwargs):
+        try:
+            user = session.query(Member).filter_by(
+                company_id=kwargs.get("company_id", 0),
+                user_id=kwargs.get("staff_id", 0)
+            ).first()
+
+        except Exception:
+            raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="invalid user or company")
+        if user and (user.is_owner or user.is_staff):
             return await func(*args, **kwargs)
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="you don't have permissions to do this")
 
