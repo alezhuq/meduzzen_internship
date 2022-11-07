@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi_pagination import Params, paginate, Page
 from fastapi_pagination.bases import AbstractPage
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_401_UNAUTHORIZED, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
 
 from app.schemas.user_schemas import UserSchema
@@ -8,7 +9,7 @@ from app.db.services.quizservice import QuizService
 from app.schemas.core import SuccessfulResult
 from app.db.services.userservice import UserService
 from app.db.services.companyservice import CompanyService
-from app.api.dependencies.dependencies import get_repository, get_current_user
+from app.api.dependencies.dependencies import get_repository, get_current_user, get_session
 from app.schemas.company_schemas import CompanySchema, CompanyResponseSchema, CompanyCreatechema
 from app.core.exceptions import NotFoundException
 from app.schemas.quiz_schemas import QuizCreateSchema, QuestionCreateSchema, QuizSchema
@@ -27,10 +28,14 @@ async def get_all_quizzes(
         company_id: int,
         page: int = DEFAULT_PAGINATION_PAGE,
         size: int = DEFAULT_PAGINATION_SIZE,
-        quiz_serice: QuizService = Depends(get_repository(QuizService)),
+        session: AsyncSession = Depends(get_session),
         current_user: UserSchema = Depends(get_current_user),
 ) -> AbstractPage[QuizSchema]:
-    quizzes = await quiz_serice.get_all_quizzes(company_id=company_id, staff_id=current_user.id)
+    quizzes = await QuizService.get_all_quizzes(
+        session=session,
+        company_id=company_id,
+        staff_id=current_user.id,
+    )
     if not quizzes:
         raise NotFoundException(detail="no quizzes found")
     return paginate(quizzes, Params(page=page, size=size))
@@ -41,9 +46,11 @@ async def create_quiz(
         company_id: int,
         new_quiz: QuizCreateSchema,
         current_user: UserSchema = Depends(get_current_user),
-        quiz_serice: QuizService = Depends(get_repository(QuizService)),
+        session: AsyncSession = Depends(get_session),
 ) -> SuccessfulResult:
-    result = await quiz_serice.create_quiz(staff_id=current_user.id, company_id=company_id, quiz=new_quiz)
+    result = await QuizService.create_quiz(
+        session=session, staff_id=current_user.id, company_id=company_id, quiz=new_quiz
+    )
     return result
 
 
@@ -52,9 +59,10 @@ async def delete_quiz(
         company_id: int,
         quiz_id: int,
         current_user: UserSchema = Depends(get_current_user),
-        quiz_serice: QuizService = Depends(get_repository(QuizService)),
+        session: AsyncSession = Depends(get_session),
 ) -> SuccessfulResult:
-    result = await quiz_serice.delete_quiz(
+    result = await QuizService.delete_quiz(
+        session=session,
         staff_id=current_user.id,
         company_id=company_id,
         quiz_id=quiz_id,
@@ -68,9 +76,11 @@ async def add_questions(
         quiz_id: int,
         questions: list[QuestionCreateSchema],
         current_user: UserSchema = Depends(get_current_user),
-        quiz_serice: QuizService = Depends(get_repository(QuizService)),
+        session: AsyncSession = Depends(get_session),
+
 ) -> SuccessfulResult:
-    result = await quiz_serice.create_questions(
+    result = await QuizService.create_questions(
+        session=session,
         staff_id=current_user.id,
         company_id=company_id,
         quiz_id=quiz_id,
@@ -84,9 +94,10 @@ async def delete_question(
         company_id: int,
         question_id: int,
         current_user: UserSchema = Depends(get_current_user),
-        quiz_serice: QuizService = Depends(get_repository(QuizService)),
+        session: AsyncSession = Depends(get_session),
 ) -> SuccessfulResult:
-    result = await quiz_serice.delete_question(
+    result = await QuizService.delete_question(
+        session=session,
         staff_id=current_user.id,
         company_id=company_id,
         question_id=question_id,

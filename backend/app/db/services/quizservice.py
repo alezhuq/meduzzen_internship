@@ -1,20 +1,20 @@
 from fastapi import HTTPException
-from starlette.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.status import HTTP_400_BAD_REQUEST
 from app.db.models.base import session
-from app.core.exceptions import AlreadyExistsException, NotFoundException
+from app.core.exceptions import NotFoundException
 from .base import BaseService
-from app.db.models.company import Company
 from app.db.models.quiz import Quiz, Question, Answer
-from app.schemas.company_schemas import CompanySchema, CompanyResponseSchema, CompanyCreatechema, MemberSchema
 from app.schemas.quiz_schemas import QuizCreateSchema, AnswerCreateSchema, QuestionCreateSchema, QuizSchema
-from app.schemas.user_schemas import UserSchema
 from app.schemas.core import SuccessfulResult
-from .companyservice import check_owner, check_staff
+from .companyservice import check_staff
 
 
 class QuizService(BaseService):
 
-    async def create_answers(self, *, question_id: int, answers: list[AnswerCreateSchema]):
+    @staticmethod
+    async def create_answers(*, session: AsyncSession, question_id: int, answers: list[AnswerCreateSchema]) -> None:
         try:
             answer_list = [
                 Answer(question_id=question_id, answer=answer.answer, is_right=answer.is_right)
@@ -22,14 +22,16 @@ class QuizService(BaseService):
             ]
 
             session.add_all(answer_list)
-            session.commit()
+            await session.commit()
         except Exception as e:
-            session.rollback()
+            await session.rollback()
             raise e
 
+    @staticmethod
     @check_staff
     async def create_questions(
-            self, *, staff_id: int, company_id: int, quiz_id: int, questions: list[QuestionCreateSchema]
+            *, session: AsyncSession, staff_id: int, company_id: int, quiz_id: int,
+            questions: list[QuestionCreateSchema]
     ) -> SuccessfulResult:
 
         for question in questions:
@@ -45,26 +47,32 @@ class QuizService(BaseService):
                 new_question = Question(quiz_id=quiz_id, name=question.name)
 
                 session.add(new_question)
-                session.commit()
+                await session.commit()
 
-                created_question = session.query(Question).filter_by(name=question.name).first()
-                await self.create_answers(question_id=created_question.id, answers=question.answers)
+                created_question_request = await session.execute(select(Question).where(Question.name == question.name))
+                created_question = created_question_request.scalars().first()
+                await QuizService.create_answers(session=session, question_id=created_question.id,
+                                                 answers=question.answers)
             except Exception as e:
-                session.rollback()
-                raise e
+                await session.rollback()
+                raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=f"{str(e)}")
 
         return SuccessfulResult(status="created")
 
+    @staticmethod
     @check_staff
-    async def create_quiz(self, *, staff_id: int, company_id: int, quiz: QuizCreateSchema) -> SuccessfulResult:
+    async def create_quiz(*, session: AsyncSession, staff_id: int, company_id: int,
+                          quiz: QuizCreateSchema) -> SuccessfulResult:
         try:
             new_quiz = Quiz(company_id=company_id, name=quiz.name, description=quiz.description)
             session.add(new_quiz)
-            session.commit()
-            created_quiz = session.query(Quiz).filter_by(name=new_quiz.name).first()
+            await session.commit()
+            created_quiz_request = await session.execute(select(Quiz).where(Quiz.name == new_quiz.name))
+            created_quiz = created_quiz_request.scalars().first()
             if len(quiz.questions) < 2:
                 raise HTTPException(HTTP_400_BAD_REQUEST, detail="there must be at least 2 questions")
-            res = await self.create_questions(
+            res = await QuizService.create_questions(
+                session=session,
                 staff_id=staff_id,
                 company_id=company_id,
                 quiz_id=created_quiz.id,
@@ -72,38 +80,57 @@ class QuizService(BaseService):
             )
 
         except Exception:
-            session.rollback()
+            await session.rollback()
             raise HTTPException(HTTP_400_BAD_REQUEST, detail="wrong data")
 
         return SuccessfulResult(status="created")
 
+    @staticmethod
     @check_staff
-    async def delete_question(self, *, staff_id: int, company_id: int, quetion_id: int) -> SuccessfulResult:
+    async def delete_question(*, session: AsyncSession, staff_id: int, company_id: int,
+                              quetion_id: int) -> SuccessfulResult:
         try:
-            selected_question = session.query(Question).filter_by(id=quetion_id).first()
-            session.delete(selected_question)
-            session.commit()
+            selected_question_request = await session.execute(select(Question).where(Question.id == quetion_id))
+            selected_question = selected_question_request.scalars().first()
+            await session.delete(selected_question)
+            await session.commit()
 
         except Exception:
+            await session.rollback()
             raise NotFoundException(detail="question was not found")
         return SuccessfulResult(status="deleted")
 
+    @staticmethod
     @check_staff
-    async def delete_quiz(self, *, staff_id: int, company_id: int, quiz_id: int) -> SuccessfulResult:
+    async def delete_quiz(*, session: AsyncSession, staff_id: int, company_id: int,
+                          quiz_id: int) -> SuccessfulResult:
         try:
-            selected_quiz = session.query(Quiz).filter_by(id=quiz_id).first()
-            session.delete(selected_quiz)
-            session.commit()
+            selected_quiz_request = await session.execute(select(Quiz).where(Quiz.id == quiz_id))
+            selected_quiz = selected_quiz_request.scalars().first()
+            await session.delete(selected_quiz)
+            await session.commit()
 
         except Exception:
+            await session.rollback()
             raise NotFoundException(detail="quiz was not found")
         return SuccessfulResult(status="deleted")
 
+    @staticmethod
     @check_staff
-    async def get_all_quizzes(self, *, staff_id: int, company_id: int,) -> list[QuizSchema]:
+    async def get_all_quizzes(
+            *,
+            session: AsyncSession,
+            staff_id: int,
+            company_id: int,
+            limit: int = 200,
+            offset: int = 0
+    ) -> list[QuizSchema]:
         try:
-            quizzes = session.query(Quiz).filter_by(company_id=company_id).all()
+            quizzes = await session.execute(
+                select(Quiz).where(Quiz.company_id == company_id).limit(limit).offset(offset)
+            )
+
         except Exception:
             raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="bad request")
 
-        return [QuizSchema(name=quiz.name, description=quiz.description) for quiz in quizzes]
+        return [QuizSchema(name=quiz.name, description=quiz.description) for quiz in quizzes.scalars()]

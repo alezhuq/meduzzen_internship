@@ -2,6 +2,7 @@ from typing import Callable, Type
 from databases import Database
 from fastapi import Depends
 from fastapi.security import HTTPBearer
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
@@ -10,6 +11,7 @@ from app.db.services.base import BaseService
 from app.db.services.userservice import UserService, TokenService
 from app.schemas.user_schemas import UserSchema
 from app.core.token import VerifyToken
+from app.db.models.base import async_session
 
 
 def get_database(request: Request) -> Database:
@@ -21,6 +23,11 @@ def get_repository(Repo_type: Type[BaseService]) -> Callable:
         return Repo_type(db)
 
     return get_repo
+
+
+async def get_session() -> AsyncSession:
+    async with async_session() as session:
+        yield session
 
 
 async def get_current_user(

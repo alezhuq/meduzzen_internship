@@ -1,5 +1,4 @@
 from .core import CoreSchema, IdMixin
-from .user_schemas import UserSchema
 
 
 class CompanySchema(IdMixin, CoreSchema):
