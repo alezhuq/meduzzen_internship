@@ -13,8 +13,9 @@ from app.schemas.user_schemas import (
     UserSchema,
     RegisterSchema,
     UserUpdatePasswordSchema,
-    UserSingleResponseSchema, SuccessfulResult
+    UserSingleResponseSchema
 )
+from app.schemas.core import SuccessfulResult
 from app.core.token import VerifyToken
 
 Users = User.__table__

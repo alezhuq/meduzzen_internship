@@ -8,3 +8,7 @@ class CoreSchema(BaseModel):
 
 class IdMixin(BaseModel):
     id: int
+
+
+class SuccessfulResult(CoreSchema):
+    status: str

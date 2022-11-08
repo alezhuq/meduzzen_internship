@@ -1,14 +1,23 @@
 import pathlib
 import sys
 import alembic
-from sqlalchemy import engine_from_config, pool
+from alembic import context
+from sqlalchemy import pool
 from logging.config import fileConfig
 import logging
+import asyncio
+
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
 # appending the app directory to path so that we can import config
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[3]))
 from app.core.config import DATABASE_URL  # noqa
+
+# do not delete this
 from app.db.models.base import BaseModel
+import app.db.models.user
+import app.db.models.company
+import app.db.models.quiz
 
 target_metadata = BaseModel.metadata
 
@@ -19,7 +28,14 @@ fileConfig(config.config_file_name)
 logger = logging.getLogger("alembic.env")
 
 
-def run_migrations_online() -> None:
+def do_run_migrations(connection):
+    context.configure(connection=connection, target_metadata=target_metadata)
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_migrations_online() -> None:
     """
     Run migrations in 'online' mode
     """
@@ -28,19 +44,17 @@ def run_migrations_online() -> None:
     connectable = config.attributes.get("connection", None)
     config.set_main_option("sqlalchemy.url", str(DATABASE_URL))
     if connectable is None:
-        connectable = engine_from_config(
+        connectable = async_engine_from_config(
             config.get_section(config.config_ini_section),
             prefix="sqlalchemy.",
             poolclass=pool.NullPool,
         )
 
-    with connectable.connect() as connection:
-        alembic.context.configure(
-            connection=connection,
-            target_metadata=target_metadata
-        )
-        with alembic.context.begin_transaction():
-            alembic.context.run_migrations()
+    async with connectable.connect() as connection:
+        async with connectable.connect() as connection:
+            await connection.run_sync(do_run_migrations)
+
+        await connectable.dispose()
 
 
 def run_migrations_offline() -> None:
@@ -57,4 +71,4 @@ if alembic.context.is_offline_mode():
     run_migrations_offline()
 else:
     logger.info("Running migrations online")
-    run_migrations_online()
+    asyncio.run(run_migrations_online())
